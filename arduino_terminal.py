@@ -43,7 +43,7 @@ def printMassiveString(stdoutStr):
         time.sleep(0.1)
 
 def execute(cmd):
-    process = subprocess.Popen(args.continuous.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
+    process = subprocess.Popen(args.continuous.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(process.stdout.readline, ""):
         yield stdout_line
     process.stdout.close()
@@ -96,7 +96,7 @@ def linux():
                     if c == '\x1b': # escape key
                         break
                     elif c == '\n' or c == '\r':
-                        port.write(output)
+                        port.write(output.encode())
                         output = ""
                     else:
                         output += c
