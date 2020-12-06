@@ -26,7 +26,7 @@ def printMassiveString(stdoutStr):
 
     for elem in arr:
         if len(elem)<255:
-            elem += '\n'
+            #elem += '\n'
             port.write(elem.encode())
         else:
             for i in range(0, len(elem), 255):
@@ -35,9 +35,21 @@ def printMassiveString(stdoutStr):
                     sub = elem[i:len(elem)]
                 else:
                     sub = elem[i:i+255]
-                elem += '\n'
+                #elem += '\n'
                 port.write(elem.encode())
+        if port.in_waiting and args.verbose:
+            line = port.readline()
+            print(line.decode())
         #time.sleep(0.1)
+
+def execute(cmd):
+    process = subprocess.Popen(args.continuous.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
+    for stdout_line in iter(process.stdout.readline, ""):
+        yield stdout_line
+    process.stdout.close()
+    return_code = process.wait()
+    if return_code:
+        raise subprocess.CalledProcessError(return_code, args.continuous)
 
 def windows():
     try:
@@ -47,7 +59,7 @@ def windows():
                 line = port.readline()
                 print(line.decode())
 
-            if args.command is None:
+            if args.command is None and args.continuous is None:
                 if msvcrt.kbhit():
                     ch = msvcrt.getch()
                     if ch == b'\r' or ch == b'\n':
@@ -55,12 +67,15 @@ def windows():
                         output = ""
                     else:
                         output += ch.decode()
-            else:
-                process = subprocess.Popen(args.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            elif args.command is not None:
+                process = subprocess.Popen(args.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = process.communicate()
                 stdoutStr = str(stdout)
                 printMassiveString(stdoutStr)
-                sys.exit(-1)
+                sys.exit(0)
+            else:
+                for output_line in execute(args.continuous):
+                    printMassiveString(output_line.decode())
 
             time.sleep(0.01)
     except KeyboardInterrupt:
@@ -75,15 +90,25 @@ def linux():
             if port.in_waiting and args.verbose:
                 line = port.readline()
                 print(line.decode())
-            if isData():
-                c = sys.stdin.read(1)
-                if c == '\x1b': # escape key
-                    break
-                elif c == '\n' or c == '\r':
-                    port.write(output.encode())
-                    output = ""
-                else:
-                    output += c
+            if args.command is None and args.continuous is None:
+                if isData():
+                    c = sys.stdin.read(1)
+                    if c == '\x1b': # escape key
+                        break
+                    elif c == '\n' or c == '\r':
+                        port.write(output)
+                        output = ""
+                    else:
+                        output += c
+            elif args.command is not None:
+                process = subprocess.Popen(args.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = process.communicate()
+                stdoutStr = str(stdout)
+                printMassiveString(stdoutStr)
+                sys.exit(-1)
+            else:
+                for output_line in execute(args.continuous):
+                    printMassiveString(output_line.decode())
         time.sleep(0.01)
     except KeyboardInterrupt:
         print('Exited')
@@ -95,7 +120,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=str, help="select the serial port")
     parser.add_argument('--verbose', type=bool, nargs='?', const=True, help="whether or not incoming data should be printed here (defaults to true)")
-    parser.add_argument('--command', type=str, nargs='?', const=None, help="If present, determines the command output to send to the serial port")
+    parser.add_argument('--command', type=str, nargs='?', const=None, help="If present, determines the command output to send to the serial port. Do not use with --continuous")
+    parser.add_argument('--continuous', type=str, nargs='?', const=None, help="If present, sends a command output to the serial port that is continuous (e.g.) journalctl -fxe. Do not use with --command")
     args = parser.parse_args()
     try:
         port = serial.Serial(str(args.port), 9600)

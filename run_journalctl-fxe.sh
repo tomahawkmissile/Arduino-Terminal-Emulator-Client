@@ -1,0 +1,1 @@
+python3 arduino_terminal.py --verbose --port=$1 --continuous="journalctl -fxe"

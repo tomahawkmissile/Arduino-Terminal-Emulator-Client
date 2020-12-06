@@ -1,1 +1,0 @@
-python3 arduino_terminal.py --verbose --port=COM8 --command=help
