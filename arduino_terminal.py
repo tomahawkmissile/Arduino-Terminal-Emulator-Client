@@ -26,7 +26,7 @@ def printMassiveString(stdoutStr):
 
     for elem in arr:
         if len(elem)<255:
-            #elem += '\n'
+            elem += '\n'
             port.write(elem.encode())
         else:
             for i in range(0, len(elem), 255):
@@ -35,12 +35,12 @@ def printMassiveString(stdoutStr):
                     sub = elem[i:len(elem)]
                 else:
                     sub = elem[i:i+255]
-                #elem += '\n'
+                elem += '\n'
                 port.write(elem.encode())
         if port.in_waiting and args.verbose:
             line = port.readline()
             print(line.decode())
-        #time.sleep(0.1)
+        time.sleep(0.1)
 
 def execute(cmd):
     process = subprocess.Popen(args.continuous.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
@@ -124,13 +124,16 @@ if __name__ == '__main__':
     parser.add_argument('--continuous', type=str, nargs='?', const=None, help="If present, sends a command output to the serial port that is continuous (e.g.) journalctl -fxe. Do not use with --command")
     args = parser.parse_args()
     try:
-        port = serial.Serial(str(args.port), 9600)
+        port = serial.Serial(str(args.port), 115200)
     except SerialException:
         print("Invalid serial port")
         sys.exit(-1)
 
     # Wait for Arduino to boot
     time.sleep(5)
+
+    port.write(str("COLOR=2044").encode())
+    time.sleep(0.2)
 
     if os.name == 'nt':
         windows()
