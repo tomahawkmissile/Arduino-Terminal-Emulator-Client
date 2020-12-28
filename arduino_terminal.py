@@ -63,6 +63,7 @@ def windows():
                 if msvcrt.kbhit():
                     ch = msvcrt.getch()
                     if ch == b'\r' or ch == b'\n':
+                        output += '\n'
                         port.write(output.encode())
                         output = ""
                     else:
@@ -96,6 +97,7 @@ def linux():
                     if c == '\x1b': # escape key
                         break
                     elif c == '\n' or c == '\r':
+                        output += '\n'
                         port.write(output.encode())
                         output = ""
                     else:
