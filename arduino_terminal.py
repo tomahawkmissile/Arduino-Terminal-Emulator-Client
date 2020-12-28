@@ -64,7 +64,7 @@ def windows():
                     ch = msvcrt.getch()
                     if ch == b'\r' or ch == b'\n':
                         output += '\n'
-                        port.write(output.encode())
+                        port.write(fr'{output}')
                         output = ""
                     else:
                         output += ch.decode()
@@ -98,7 +98,7 @@ def linux():
                         break
                     elif c == '\n' or c == '\r':
                         output += '\n'
-                        port.write(output.encode())
+                        port.write(fr'{output}')
                         output = ""
                     else:
                         output += c
